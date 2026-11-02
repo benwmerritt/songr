@@ -110,7 +110,19 @@ export class RoonClient extends EventEmitter {
     });
 
     this.emit("core-status", { coreStatus: "discovering" });
-    this.roon.start_discovery();
+    const directHost = process.env.ROON_CORE_HOST;
+    const directPort = Number(process.env.ROON_CORE_PORT || 0);
+    if (directHost && directPort > 0) {
+      this.options.logger.info({ host: directHost, port: directPort }, "Connecting directly to Roon core");
+      this.roon.ws_connect({
+        host: directHost,
+        port: directPort,
+        onclose: () => this.options.logger.warn("Direct Roon core connection closed"),
+        onerror: () => this.options.logger.warn("Direct Roon core connection error"),
+      });
+    } else {
+      this.roon.start_discovery();
+    }
   }
 
   public getTransport(): any | null {
